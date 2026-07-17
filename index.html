@@ -2,7 +2,8 @@
 <html lang="hu">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <!-- JAVÍTVA: Engedélyezve a nagyítás (törölve a maximum-scale és user-scalable) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Meghívó</title>
   <style>
     :root {
@@ -33,7 +34,8 @@
       padding-top: 40px;
       background: #f0ece9;
       overflow: hidden;
-      touch-action: none;
+      /* JAVÍTVA: "none" helyett "pan-y", így engedi a kétujjas nagyítást (zoom), de a vízszintes lapozást megtartja a JS-nek */
+      touch-action: pan-y;
     }
 
     .viewport {
