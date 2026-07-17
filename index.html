@@ -75,6 +75,9 @@
     #leaf-back.flipped { transform: rotateY(-180deg); z-index: 15; }
 
     .moving-to-back #leaf-back { z-index: 20; } 
+    
+    /* Megakadályozza, hogy az 1. oldalra való visszalapozás közben a belső lapok előreugorjanak a z-index miatt */
+    body.state-1.moving-to-back #leaf-cover { z-index: 25; }
 
     .face {
       position: absolute;
@@ -87,31 +90,26 @@
       transform: translateZ(1px);
     }
 
-    /* Lágyabb átmenetű, több lépcsős gerinc-árnyékok */
+    /* Kisebb és mindkét oldalon teljesen szimmetrikus belső árnyék */
     .face::after {
-      content: "";
+      content: '';
       position: absolute;
       inset: 0;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity var(--dur) var(--ease);
       border-radius: var(--radius);
-    }
-
-    #leaf-cover .back::after {
-      background: linear-gradient(to left, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.03) 4%, rgba(0,0,0,0.01) 8%, transparent 15%);
-    }
-
-    #leaf-back .front::after {
-      background: linear-gradient(to right, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.03) 4%, rgba(0,0,0,0.01) 8%, transparent 15%);
-    }
-
-    /* Árnyékok láthatósága a megfelelő oldalak nyitott állapotában */
-    body.state-1 #leaf-cover .back::after,
-    body.state-1 #leaf-back .front::after,
-    body.state-2 #leaf-cover .back::after,
-    body.state-2 #leaf-back .front::after {
+      background: linear-gradient(to right, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0) 4%, rgba(0,0,0,0) 100%);
+      pointer-events: none;
+      transition: opacity var(--dur) var(--ease);
       opacity: 1;
+    }
+
+    .back::after {
+      background: linear-gradient(to left, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0) 4%, rgba(0,0,0,0) 100%);
+    }
+
+    /* A lapozás közbeni lágyulás mértéke is teljesen azonossá és szimmetrikussá vált */
+    .flipped .front::after,
+    :not(.flipped) .back::after {
+      opacity: 0.3;
     }
 
     .back { transform: rotateY(180deg) translateZ(1px); }
@@ -123,7 +121,7 @@
     .nav-dots {
       position: fixed; bottom: 40px; display: flex; gap: 10px; left: 50%; transform: translateX(-50%);
     }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.5); }
     .dot.active { background: #2b5950; }
   </style>
 </head>
@@ -161,7 +159,7 @@
         setTimeout(() => {
           applyState(newState);
           setTimeout(() => body.classList.remove('moving-to-back'), 50);
-        }, 800);
+        }, 1100);
 
       } else if (state === 1 && newState === 0) {
         body.classList.add('moving-to-back');
@@ -169,7 +167,7 @@
         setTimeout(() => {
           applyState(newState);
           setTimeout(() => body.classList.remove('moving-to-back'), 50);
-        }, 800);
+        }, 1100);
       } else {
         applyState(newState);
       }
