@@ -33,7 +33,6 @@
       padding-top: 40px;
       background: #f0ece9;
       overflow: hidden;
-      /* JAVÍTVA: "pan-x"-re állítva, hogy a böngésző ne blokkolja a vízszintes swipe mozdulatot */
       touch-action: pan-x;
     }
 
@@ -128,7 +127,6 @@
     .dot.active { background: #2b5950; }
   </style>
 </head>
-<!-- JAVÍTVA: A handleClick eseményből kivettem a mobil érintések bezavarását a gombnyomás szűrésével -->
 <body class="state-0" onclick="if(event.pointerType !== 'touch') handleClick(event)">
 
   <div class="viewport">
@@ -193,9 +191,22 @@
     }
 
     let touchStartX = 0;
-    /* JAVÍTVA: A document helyett a body-ra tettem az eseményeket, és passzív módot kaptak, hogy azonnal fussanak */
-    body.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].clientX; }, {passive: true});
+    let isMultiTouch = false; /* ÚJ: Figyeli, hogy többujjas-e az érintés */
+
+    body.addEventListener('touchstart', e => { 
+      /* JAVÍTVA: Ha kettő vagy több ujj ér a kijelzőhöz, azonnal leállítja a lapozást */
+      if (e.touches.length > 1) {
+        isMultiTouch = true;
+        return;
+      }
+      isMultiTouch = false;
+      touchStartX = e.changedTouches[0].clientX; 
+    }, {passive: true});
+
     body.addEventListener('touchend', e => {
+      /* JAVÍTVA: Ha az érintés során használtak egy második ujjat is, nem lapoz */
+      if (isMultiTouch) return;
+
       const touchEndX = e.changedTouches[0].clientX;
       if (touchStartX - touchEndX > 50) move(1);
       if (touchStartX - touchEndX < -50) move(-1);
