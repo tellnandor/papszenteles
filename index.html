@@ -2,7 +2,6 @@
 <html lang="hu">
 <head>
   <meta charset="UTF-8" />
-  <!-- JAVÍTVA: Engedélyezve a nagyítás (törölve a maximum-scale és user-scalable) -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Meghívó</title>
   <style>
@@ -34,8 +33,8 @@
       padding-top: 40px;
       background: #f0ece9;
       overflow: hidden;
-      /* JAVÍTVA: "none" helyett "pan-y", így engedi a kétujjas nagyítást (zoom), de a vízszintes lapozást megtartja a JS-nek */
-      touch-action: pan-y;
+      /* JAVÍTVA: "pan-x"-re állítva, hogy a böngésző ne blokkolja a vízszintes swipe mozdulatot */
+      touch-action: pan-x;
     }
 
     .viewport {
@@ -129,7 +128,8 @@
     .dot.active { background: #2b5950; }
   </style>
 </head>
-<body class="state-0" onclick="handleClick(event)">
+<!-- JAVÍTVA: A handleClick eseményből kivettem a mobil érintések bezavarását a gombnyomás szűrésével -->
+<body class="state-0" onclick="if(event.pointerType !== 'touch') handleClick(event)">
 
   <div class="viewport">
     <div class="book-wrap">
@@ -193,12 +193,13 @@
     }
 
     let touchStartX = 0;
-    document.addEventListener('touchstart', e => { touchStartX = e.changedTouches.clientX; });
-    document.addEventListener('touchend', e => {
-      const touchEndX = e.changedTouches.clientX;
+    /* JAVÍTVA: A document helyett a body-ra tettem az eseményeket, és passzív módot kaptak, hogy azonnal fussanak */
+    body.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].clientX; }, {passive: true});
+    body.addEventListener('touchend', e => {
+      const touchEndX = e.changedTouches[0].clientX;
       if (touchStartX - touchEndX > 50) move(1);
       if (touchStartX - touchEndX < -50) move(-1);
-    });
+    }, {passive: true});
 
     document.addEventListener('keydown', e => {
       if (e.key === 'ArrowRight') move(1);
