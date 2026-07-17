@@ -127,7 +127,7 @@
     .dot.active { background: #2b5950; }
   </style>
 </head>
-<body class="state-0">
+<body class="state-0" onclick="handleClick(event)">
 
   <div class="viewport">
     <div class="book-wrap">
@@ -185,37 +185,19 @@
 
     applyState(0);
 
-    // KATTINTÁS (Csak egérrel, hogy mobilon ne ütközzön a swipe-al)
-    window.addEventListener('click', e => {
-      if (e.pointerType === 'touch') return; // Kihagyja, ha érintés történt
+    function handleClick(e) {
       if (e.clientX > window.innerWidth / 2) move(1);
       else move(-1);
+    }
+
+    let touchStartX = 0;
+    document.addEventListener('touchstart', e => { touchStartX = e.changedTouches.clientX; });
+    document.addEventListener('touchend', e => {
+      const touchEndX = e.changedTouches.clientX;
+      if (touchStartX - touchEndX > 50) move(1);
+      if (touchStartX - touchEndX < -50) move(-1);
     });
 
-    // SWIPE KEZELÉS ÉRINTŐKIJELZŐRE
-    let touchStartX = 0;
-    let touchStartY = 0;
-
-    window.addEventListener('touchstart', e => {
-      touchStartX = e.changedTouches[0].clientX;
-      touchStartY = e.changedTouches[0].clientY;
-    }, { passive: true });
-
-    window.addEventListener('touchend', e => {
-      const touchEndX = e.changedTouches[0].clientX;
-      const touchEndY = e.changedTouches[0].clientY;
-      
-      const diffX = touchStartX - touchEndX;
-      const diffY = touchStartY - touchEndY;
-
-      // Ellenőrizzük, hogy vízszintes mozgás történt-e, és nem függőleges görgetés
-      if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 40) {
-        if (diffX > 0) move(1);  // Balra húzás -> Következő oldal
-        else move(-1);           // Jobbra húzás -> Előző oldal
-      }
-    }, { passive: true });
-
-    // NYILAK
     document.addEventListener('keydown', e => {
       if (e.key === 'ArrowRight') move(1);
       if (e.key === 'ArrowLeft') move(-1);
