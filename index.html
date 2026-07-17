@@ -6,14 +6,20 @@
   <title>Meghívó</title>
   <style>
     :root {
-      /* Mobil alapméretek */
-      --page-w: 80vw;
-      --page-h: 115vw;
-      --max-w: 340px;
-      --max-h: 480px;
+      /* Fix mobil alapméretek a viewport magasság (vh/vw) ugrálásának kiküszöbölésére */
+      --page-w: 320px;
+      --page-h: 460px;
       --dur: 1.1s;
       --ease: cubic-bezier(.645, .045, .355, 1);
       --radius: 12px;
+    }
+
+    /* Kisebb kijelzőjű telefonok támogatása */
+    @media (max-width: 330px) {
+      :root {
+        --page-w: 280px;
+        --page-h: 400px;
+      }
     }
 
     /* PC-n (asztali nézetben) nagyobb méretek alkalmazása */
@@ -188,13 +194,23 @@
       else move(-1);
     }
 
+    /* Kifogástalan, fixált Swipe (elhúzás) kezelés */
     let touchStartX = 0;
-    document.addEventListener('touchstart', e => { touchStartX = e.changedTouches.clientX; });
+    document.addEventListener('touchstart', e => { 
+      touchStartX = e.changedTouches[0].clientX; 
+    }, { passive: true });
+
     document.addEventListener('touchend', e => {
-      const touchEndX = e.changedTouches.clientX;
-      if (touchStartX - touchEndX > 50) move(1);
-      if (touchStartX - touchEndX < -50) move(-1);
-    });
+      const touchEndX = e.changedTouches[0].clientX;
+      const diffX = touchStartX - touchEndX;
+
+      // Csak akkor lapoz, ha a húzás hossza nagyobb, mint 50 pixel
+      if (diffX > 50) {
+        move(1); // Balra húzás -> Következő oldal
+      } else if (diffX < -50) {
+        move(-1); // Jobbra húzás -> Előző oldal
+      }
+    }, { passive: true });
 
     document.addEventListener('keydown', e => {
       if (e.key === 'ArrowRight') move(1);
