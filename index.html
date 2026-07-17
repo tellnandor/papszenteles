@@ -90,7 +90,8 @@
     #leaf-cover.flipped { transform: rotateY(-180deg); z-index: 4; }
     #leaf-back.flipped { transform: rotateY(-180deg); z-index: 15; }
 
-    .moving-to-back #leaf-back { z-index: 20; } 
+    /* Megakadályozza, hogy az utolsó (4.) oldalra való lapozás közben a borítólapok előreugorjanak vagy átvillanjanak */
+    .moving-to-back #leaf-back { z-index: 25; } 
     
     /* Megakadályozza, hogy az 1. oldalra való visszalapozás közben a belső lapok előreugorjanak a z-index miatt */
     body.state-1.moving-to-back #leaf-cover { z-index: 25; }
@@ -207,11 +208,11 @@
     /* Kifogástalan, fixált Swipe (elhúzás) kezelés */
     let touchStartX = 0;
     document.addEventListener('touchstart', e => { 
-      touchStartX = e.changedTouches[0].clientX; 
+      touchStartX = e.changedTouches.clientX; 
     }, { passive: true });
 
     document.addEventListener('touchend', e => {
-      const touchEndX = e.changedTouches[0].clientX;
+      const touchEndX = e.changedTouches.clientX;
       const diffX = touchStartX - touchEndX;
 
       // Csak akkor lapoz, ha a húzás hossza nagyobb, mint 50 pixel
