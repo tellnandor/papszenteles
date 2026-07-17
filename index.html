@@ -2,7 +2,8 @@
 <html lang="hu">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- AZ EREDETI: Maradt a gyári zoom tiltás, hogy a virtuális zoom stabil legyen -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Meghívó</title>
   <style>
     :root {
@@ -33,14 +34,16 @@
       padding-top: 40px;
       background: #f0ece9;
       overflow: hidden;
-      /* JAVÍTVA: Visszaállítva auto-ra, hogy nagyítás után lehessen görgetni a képet minden irányba */
-      touch-action: auto;
+      touch-action: none;
     }
 
     .viewport {
       width: var(--page-w);
       height: var(--page-h);
       perspective: 2500px;
+      /* MÓDOSÍTVA: Sima átmenet a virtuális zoomoláshoz és mozgatáshoz */
+      transition: transform 0.1s ease-out;
+      transform-origin: center center;
     }
 
     .book-wrap {
@@ -128,9 +131,9 @@
     .dot.active { background: #2b5950; }
   </style>
 </head>
-<body class="state-0" onclick="if(event.pointerType !== 'touch') handleClick(event)">
+<body class="state-0" onclick="handleClick(event)">
 
-  <div class="viewport">
+  <div class="viewport" id="zoom-viewport">
     <div class="book-wrap">
       <div class="leaf" id="leaf-back">
         <div class="face front"><img src="3.jpg"></div>
@@ -153,6 +156,9 @@
     const dots = document.querySelectorAll('.dot');
 
     function move(dir) {
+      /* ÚJ SZŰRÉS: Ha a könyv fel van nagyítva, tilos a lapozás */
+      if (currentScale > 1.05) return;
+
       const newState = state + dir;
       if (newState < 0 || newState > 3) return;
 
@@ -187,39 +193,78 @@
     applyState(0);
 
     function handleClick(e) {
-      /* JAVÍTVA: Kattintásnál is ellenőrizzük, hogy nincs-e felnagyítva az oldal */
-      if (window.visualViewport && window.visualViewport.scale > 1.05) return;
+      /* ÚJ: Ha fel van nagyítva, a kattintás nem lapoz */
+      if (currentScale > 1.05) return;
       if (e.clientX > window.innerWidth / 2) move(1);
       else move(-1);
     }
 
+    /* --- VIRTUÁLIS PINCH TO ZOOM & PAN LOGIKA (ÚJ) --- */
+    const zoomTarget = document.getElementById('zoom-viewport');
+    let currentScale = 1;
+    let startScale = 1;
+    let startDistance = 0;
     let touchStartX = 0;
     let touchStartY = 0;
+    let panX = 0;
+    let panY = 0;
+    let startPanX = 0;
+    let startPanY = 0;
+    let isPinch = false;
 
-    body.addEventListener('touchstart', e => { 
-      /* JAVÍTVA: Ha a felhasználó rázoomolt az oldalra, teljesen kikapcsoljuk a lapozást, hogy tudjon nézelődni a képen */
-      if (window.visualViewport && window.visualViewport.scale > 1.05) return;
-      if (e.touches.length > 1) return;
+    function getDistance(t1, t2) {
+      return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+    }
 
-      touchStartX = e.changedTouches.clientX; 
-      touchStartY = e.changedTouches.clientY; 
-    }, {passive: true});
-
-    body.addEventListener('touchend', e => {
-      if (window.visualViewport && window.visualViewport.scale > 1.05) return;
-
-      const touchEndX = e.changedTouches.clientX;
-      const touchEndY = e.changedTouches.clientY;
-      
-      const dx = touchStartX - touchEndX;
-      const dy = touchStartY - touchEndY;
-
-      /* JAVÍTVA: Csak akkor lapozunk, ha a mozdulat határozottan vízszintes volt (nem pedig átlós vagy függőleges) */
-      if (Math.abs(dx) > Math.abs(dy) * 1.5) {
-        if (dx > 50) move(1);
-        if (dx < -50) move(-1);
+    document.addEventListener('touchstart', e => {
+      if (e.touches.length === 2) {
+        isPinch = true;
+        startDistance = getDistance(e.touches[0], e.touches[1]);
+        startScale = currentScale;
+      } else if (e.touches.length === 1) {
+        isPinch = false;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        startPanX = panX;
+        startPanY = panY;
       }
-    }, {passive: true});
+    }, { passive: true });
+
+    document.addEventListener('touchmove', e => {
+      if (isPinch && e.touches.length === 2) {
+        const dist = getDistance(e.touches[0], e.touches[1]);
+        /* Nagyítás mértékének kiszámítása (Minimum 1x, Maximum 3x) */
+        currentScale = Math.min(Math.max(startScale * (dist / startDistance), 1), 3);
+        
+        /* Ha visszakicsinyítettünk az eredetire, nullázzuk a pozíciót */
+        if (currentScale <= 1.02) {
+          currentScale = 1;
+          panX = 0;
+          panY = 0;
+        }
+        zoomTarget.style.transform = `scale(${currentScale}) translate(${panX / currentScale}px, ${panY / currentScale}px)`;
+      } else if (!isPinch && e.touches.length === 1 && currentScale > 1) {
+        /* Ha fel van nagyítva, az egyujjas mozdulat mozgatja (pan) a képet */
+        const dx = e.touches[0].clientX - touchStartX;
+        const dy = e.touches[0].clientY - touchStartY;
+        panX = startPanX + dx;
+        panY = startPanY + dy;
+        zoomTarget.style.transform = `scale(${currentScale}) translate(${panX / currentScale}px, ${panY / currentScale}px)`;
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchend', e => {
+      /* EREDETI LAPOZÁS: Csak akkor fut le, ha nem pinch-zoomoltak és a könyv alapméretű */
+      if (currentScale <= 1.05 && e.touches.length === 0 && !isPinch) {
+        const touchEndX = e.changedTouches[0].clientX;
+        if (touchStartX - touchEndX > 50) move(1);
+        if (touchStartX - touchEndX < -50) move(-1);
+      }
+      
+      if (e.touches.length < 2) {
+        isPinch = false;
+      }
+    });
 
     document.addEventListener('keydown', e => {
       if (e.key === 'ArrowRight') move(1);
